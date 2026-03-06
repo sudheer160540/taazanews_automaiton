@@ -1,0 +1,21 @@
+{
+  "name": "playwrite_demo",
+  "version": "1.0.0",
+  "description": "Playwright automation to scrape Eenadu.net latest news list and article content",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "scrape": "tsx src/index.ts",
+    "build": "tsc",
+    "scrape:built": "node dist/index.js"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^5.4.2",
+    "playwright": "^1.58.2"
+  },
+  "devDependencies": {
+    "@types/node": "^25.2.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}
