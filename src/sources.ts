@@ -12,7 +12,7 @@ export const SOURCES: SourceConfig[] = [
     source: "eenadu",
     type: "automate",
     url: "https://www.eenadu.net/latest-news-list",
-    maxItems: 10,
+    maxItems: 20,
   },
   // {
   //   source: "toi",
