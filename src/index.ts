@@ -2,10 +2,14 @@ import { mkdir, writeFile } from "fs/promises";
 import { dirname } from "path";
 import { SOURCES } from "./sources.js";
 import type { NewsItem, SourceConfig } from "./framework/types.js";
+import { postSourceArticles, toApiPayload } from "./framework/api.js";
 import { scrapeRss } from "./handlers/rss.js";
 import { scrapeAutomate } from "./handlers/automate.js";
 
 const OUTPUT_FILE = process.env.OUTPUT_FILE ?? "output/news.json";
+const API_URL =
+  process.env.API_URL ?? "http://localhost:5001/api/source-articles";
+const SKIP_API_POST = process.env.SKIP_API_POST === "1";
 
 async function runOne(source: SourceConfig): Promise<NewsItem[]> {
   switch (source.type) {
@@ -48,8 +52,20 @@ async function main(): Promise<void> {
   }
 
   await mkdir(dirname(OUTPUT_FILE), { recursive: true });
-  await writeFile(OUTPUT_FILE, JSON.stringify(all, null, 2), "utf-8");
+  const forOutput = all.map(toApiPayload);
+  await writeFile(OUTPUT_FILE, JSON.stringify(forOutput, null, 2), "utf-8");
   console.error(`\nWrote ${all.length} items to ${OUTPUT_FILE}`);
+
+  if (!SKIP_API_POST) {
+    console.error(`\nPosting to ${API_URL} ...`);
+    const { ok, status, body } = await postSourceArticles(all, API_URL);
+    if (ok) {
+      console.error(`API POST OK (${status}): ${body.slice(0, 500)}`);
+    } else {
+      console.error(`API POST failed (${status}): ${body.slice(0, 500)}`);
+      process.exitCode = 1;
+    }
+  }
 }
 
 main().catch((err) => {

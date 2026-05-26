@@ -1,13 +1,12 @@
 import { chromium, type Page } from "playwright";
 import type { AutomateSourceConfig, NewsItem } from "../framework/types.js";
-import { safeString, sleep, uniq } from "../framework/utils.js";
+import { safeString, sleep, sleepBetweenArticles, uniq } from "../framework/utils.js";
 
 const BASE_URL = "https://www.eenadu.net";
 const GOTO_TIMEOUT_MS = 30000;
 const ARTICLE_SELECTOR_TIMEOUT_MS = 15000;
 const LOAD_MORE_DELAY_MS = 2500;
 const MAX_LOAD_MORE_CLICKS = 300;
-const DELAY_BETWEEN_ARTICLES_MS = 800;
 
 function isArticleUrl(href: string): boolean {
   if (!href.startsWith(BASE_URL + "/")) return false;
@@ -86,7 +85,14 @@ async function scrapeArticle(page: Page, url: string): Promise<NewsItem> {
     const title = safeString(await page.locator("h1.red.fnt-txt").first().textContent().catch(() => null));
     const publishedRaw = safeString(await page.locator(".pub-sec.pub-t").first().innerText().catch(() => null));
     const body = safeString(await page.locator("div.text-justify").first().innerText().catch(() => null));
-
+console.log({
+  source: "eenadu",
+  type: "automate",
+  url,
+  title,
+  publishedAt: publishedRaw,
+  contentText: body,
+})
     return {
       source: "eenadu",
       type: "automate",
@@ -119,7 +125,7 @@ export async function scrapeEenaduAutomate(cfg: AutomateSourceConfig): Promise<N
       const url = targets[i];
       console.error(`[eenadu] [${i + 1}/${targets.length}] ${url}`);
       out.push(await scrapeArticle(page, url));
-      if (i < targets.length - 1) await sleep(DELAY_BETWEEN_ARTICLES_MS);
+      if (i < targets.length - 1) await sleepBetweenArticles();
     }
     return out;
   } finally {

@@ -12,12 +12,12 @@ export const SOURCES: SourceConfig[] = [
     source: "eenadu",
     type: "automate",
     url: "https://www.eenadu.net/latest-news-list",
-    maxItems: 0,
+    maxItems: 10,
   },
-  {
-    source: "toi",
-    type: "rss",
-    url: "https://timesofindia.indiatimes.com/rssfeedstopstories.cms",
-  },
+  // {
+  //   source: "toi",
+  //   type: "rss",
+  //   url: "https://timesofindia.indiatimes.com/rssfeedstopstories.cms",
+  // },
 ];
 

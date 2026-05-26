@@ -1,6 +1,7 @@
 import { chromium, type Page } from "playwright";
 import { writeFile, mkdir } from "fs/promises";
 import { dirname } from "path";
+import { sleepBetweenArticles } from "./framework/utils.js";
 
 const LIST_URL = "https://www.eenadu.net/latest-news-list";
 const OUTPUT_FILE = "output/articles.json";
@@ -8,7 +9,6 @@ const BASE_URL = "https://www.eenadu.net";
 const GOTO_TIMEOUT_MS = 20000;
 const SELECTOR_TIMEOUT_MS = 15000;
 const ARTICLE_SELECTOR_TIMEOUT_MS = 10000;
-const DELAY_BETWEEN_ARTICLES_MS = 800;
 
 /** Limit number of articles to scrape (set to 0 or omit to scrape all). */
 const MAX_ARTICLES = process.env.MAX_ARTICLES ? parseInt(process.env.MAX_ARTICLES, 10) : 0;
@@ -189,7 +189,7 @@ async function main(): Promise<void> {
       const article = await getArticleContent(page, url);
       results.push(article);
       if (i < toScrape.length - 1) {
-        await new Promise((r) => setTimeout(r, DELAY_BETWEEN_ARTICLES_MS));
+        await sleepBetweenArticles();
       }
     }
 
