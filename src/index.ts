@@ -8,7 +8,7 @@ import { scrapeAutomate } from "./handlers/automate.js";
 
 const OUTPUT_FILE = process.env.OUTPUT_FILE ?? "output/news.json";
 const API_URL =
-  process.env.API_URL ?? "http://localhost:5001/api/source-articles";
+  process.env.API_URL ?? "https://taajanews-api.onrender.com/api/source-articles";
 const SKIP_API_POST = process.env.SKIP_API_POST === "1";
 
 async function runOne(source: SourceConfig): Promise<NewsItem[]> {
