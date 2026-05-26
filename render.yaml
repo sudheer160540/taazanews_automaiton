@@ -1,0 +1,23 @@
+# Render Blueprint — apply from Dashboard: New → Blueprint → connect this repo.
+# After deploy, open the cron service and click "Trigger Run" to test without waiting for the schedule.
+services:
+  - type: cron
+    name: news-scraper
+    runtime: node
+    # Pick instance in Blueprint review (Playwright needs ~512MB+ RAM)
+    region: oregon
+    schedule: "0 */6 * * *"
+    # --include=dev keeps TypeScript available even if NODE_ENV=production
+    buildCommand: npm ci --include=dev && npm run build && npm run install:browsers
+    startCommand: npm run scrape:built
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Chromium in node_modules (survives deploy); fixes "Executable doesn't exist"
+      - key: PLAYWRIGHT_BROWSERS_PATH
+        value: "0"
+      - key: API_URL
+        value: https://taajanews-api.onrender.com/api/source-articles
+      # Optional: set in Dashboard if you want scrape-only (no POST)
+      # - key: SKIP_API_POST
+      #   value: "1"

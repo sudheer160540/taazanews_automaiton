@@ -7,7 +7,9 @@
   "scripts": {
     "scrape": "tsx src/index.ts",
     "build": "tsc",
-    "scrape:built": "node dist/index.js"
+    "scrape:built": "node dist/index.js",
+    "postinstall": "playwright install chromium",
+    "install:browsers": "playwright install chromium"
   },
   "dependencies": {
     "fast-xml-parser": "^5.4.2",
