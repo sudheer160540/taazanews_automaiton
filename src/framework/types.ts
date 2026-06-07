@@ -29,3 +29,17 @@ export interface NewsItem {
   error?: string;
 }
 
+/** Called after each scraped article — used to POST to API one at a time. */
+export type ArticleSink = (item: NewsItem) => Promise<void>;
+
+export interface ScrapeOptions {
+  onItem?: ArticleSink;
+}
+
+export interface ScrapeStats {
+  scraped: number;
+  posted: number;
+  postFailed: number;
+  skipped: number;
+}
+

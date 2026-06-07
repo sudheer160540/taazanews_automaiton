@@ -1,8 +1,8 @@
 import { mkdir, writeFile } from "fs/promises";
 import { dirname } from "path";
 import { SOURCES } from "./sources.js";
-import type { NewsItem, SourceConfig } from "./framework/types.js";
-import { postSourceArticles, toApiPayload } from "./framework/api.js";
+import type { NewsItem, ScrapeStats, SourceConfig } from "./framework/types.js";
+import { createApiSink } from "./framework/api.js";
 import { scrapeRss } from "./handlers/rss.js";
 import { scrapeAutomate } from "./handlers/automate.js";
 
@@ -10,61 +10,66 @@ const OUTPUT_FILE = process.env.OUTPUT_FILE ?? "output/news.json";
 const API_URL =
   process.env.API_URL ?? "https://taajanews-api.onrender.com/api/source-articles";
 const SKIP_API_POST = process.env.SKIP_API_POST === "1";
+const WRITE_OUTPUT_FILE = process.env.WRITE_OUTPUT_FILE === "1";
 
-async function runOne(source: SourceConfig): Promise<NewsItem[]> {
+const noopSink = async (_item: NewsItem): Promise<void> => {};
+
+async function runOne(
+  source: SourceConfig,
+  onItem: (item: NewsItem) => Promise<void>
+): Promise<ScrapeStats> {
   switch (source.type) {
     case "rss":
-      return await scrapeRss(source);
+      return await scrapeRss(source, { onItem });
     case "automate":
-      return await scrapeAutomate(source);
-    default: {
-      const s = source as unknown as { source?: string; type?: string; url?: string };
-      return [
-        {
-          source: s.source ?? "unknown",
-          type: (s.type as any) ?? "rss",
-          url: s.url ?? "",
-          error: `Unsupported source type: ${String(s.type)}`,
-        },
-      ];
-    }
+      return await scrapeAutomate(source, { onItem });
+    default:
+      console.error(`Unsupported source type: ${String((source as SourceConfig).type)}`);
+      return { scraped: 0, posted: 0, postFailed: 0, skipped: 1 };
   }
 }
 
 async function main(): Promise<void> {
-  const all: NewsItem[] = [];
+  const totals: ScrapeStats = { scraped: 0, posted: 0, postFailed: 0, skipped: 0 };
+  const apiCounters = { posted: 0, postFailed: 0 };
+  const onItem = SKIP_API_POST ? noopSink : createApiSink(API_URL, apiCounters);
+
   for (const src of SOURCES) {
     console.error(`\n==> ${src.source} (${src.type}) ${src.url}`);
     try {
-      const items = await runOne(src);
-      all.push(...items);
-      console.error(`Collected ${items.length} items from ${src.source}`);
+      const postedBefore = apiCounters.posted;
+      const failedBefore = apiCounters.postFailed;
+      const stats = await runOne(src, onItem);
+      const posted = apiCounters.posted - postedBefore;
+      const postFailed = apiCounters.postFailed - failedBefore;
+
+      totals.scraped += stats.scraped;
+      totals.skipped += stats.skipped;
+      console.error(
+        `[${src.source}] scraped ${stats.scraped}, posted ${posted}, api failed ${postFailed}`
+      );
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      all.push({
-        source: src.source,
-        type: src.type,
-        url: src.url,
-        error: message,
-      });
       console.error(`Failed ${src.source}: ${message}`);
+      totals.skipped += 1;
     }
   }
 
-  await mkdir(dirname(OUTPUT_FILE), { recursive: true });
-  const forOutput = all.map(toApiPayload);
-  await writeFile(OUTPUT_FILE, JSON.stringify(forOutput, null, 2), "utf-8");
-  console.error(`\nWrote ${all.length} items to ${OUTPUT_FILE}`);
+  totals.posted = apiCounters.posted;
+  totals.postFailed = apiCounters.postFailed;
 
-  if (!SKIP_API_POST) {
-    console.error(`\nPosting to ${API_URL} ...`);
-    const { ok, status, body } = await postSourceArticles(all, API_URL);
-    if (ok) {
-      console.error(`API POST OK (${status}): ${body.slice(0, 500)}`);
-    } else {
-      console.error(`API POST failed (${status}): ${body.slice(0, 500)}`);
-      process.exitCode = 1;
-    }
+  console.error(
+    `\nDone — scraped ${totals.scraped}, posted ${totals.posted}, post failed ${totals.postFailed}`
+  );
+
+  if (WRITE_OUTPUT_FILE) {
+    await mkdir(dirname(OUTPUT_FILE), { recursive: true });
+    await writeFile(OUTPUT_FILE, JSON.stringify(totals, null, 2), "utf-8");
+    console.error(`Wrote run summary to ${OUTPUT_FILE}`);
+  }
+
+  if (!SKIP_API_POST && totals.postFailed > 0) {
+    process.exitCode = 1;
   }
 }
 
@@ -72,4 +77,3 @@ main().catch((err) => {
   console.error(err);
   process.exit(1);
 });
-

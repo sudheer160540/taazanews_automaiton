@@ -1,4 +1,4 @@
-import type { NewsItem } from "./types.js";
+import type { ArticleSink, NewsItem } from "./types.js";
 import { extractSourceId } from "./sourceId.js";
 
 export interface SourceArticlePayload {
@@ -12,10 +12,15 @@ export interface SourceArticlePayload {
   error?: string;
 }
 
+export interface PostResult {
+  ok: boolean;
+  status: number;
+  body: string;
+}
+
 export function toApiPayload(item: NewsItem): SourceArticlePayload {
   const sourceId = extractSourceId(item.source, item.url);
-  const contentText =
-    item.contentText ?? item.summary ?? undefined;
+  const contentText = item.contentText ?? item.summary ?? undefined;
 
   return {
     source: item.source,
@@ -29,27 +34,47 @@ export function toApiPayload(item: NewsItem): SourceArticlePayload {
   };
 }
 
-export async function postSourceArticles(
-  items: NewsItem[],
+/** POST a single article (API expects an array with one item). */
+export async function postSourceArticle(
+  item: NewsItem,
   apiUrl: string
-): Promise<{ ok: boolean; status: number; body: string }> {
-  const payloads = items
-    .filter((x) => !x.error && x.url)
-    .map(toApiPayload);
-
-  if (payloads.length === 0) {
-    return { ok: true, status: 204, body: "No articles to post (all had errors or empty)." };
+): Promise<PostResult> {
+  if (item.error || !item.url) {
+    return { ok: false, status: 0, body: "Skipped: item has error or no url" };
   }
 
+  const payload = toApiPayload(item);
   const res = await fetch(apiUrl, {
     method: "POST",
     headers: {
       "content-type": "application/json",
       accept: "application/json",
     },
-    body: JSON.stringify(payloads),
+    body: JSON.stringify([payload]),
   });
 
   const body = await res.text();
   return { ok: res.ok, status: res.status, body };
+}
+
+/** Sink that POSTs each item to the API as soon as it is scraped. */
+export function createApiSink(
+  apiUrl: string,
+  counters?: { posted: number; postFailed: number }
+): ArticleSink {
+  return async (item: NewsItem) => {
+    if (item.error || !item.url) return;
+
+    const sourceId = extractSourceId(item.source, item.url);
+    const label = sourceId ?? item.url.slice(-40);
+    const { ok, status, body } = await postSourceArticle(item, apiUrl);
+
+    if (ok) {
+      counters && (counters.posted += 1);
+      console.error(`[api] saved ${item.source} ${label} (${status})`);
+    } else {
+      counters && (counters.postFailed += 1);
+      console.error(`[api] failed ${item.source} ${label} (${status}): ${body.slice(0, 200)}`);
+    }
+  };
 }

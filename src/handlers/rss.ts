@@ -1,5 +1,5 @@
 import { XMLParser } from "fast-xml-parser";
-import type { NewsItem, RssSourceConfig } from "../framework/types.js";
+import type { NewsItem, RssSourceConfig, ScrapeOptions, ScrapeStats } from "../framework/types.js";
 import { safeString } from "../framework/utils.js";
 
 type AnyObj = Record<string, unknown>;
@@ -9,8 +9,12 @@ function asArray<T>(v: T | T[] | undefined): T[] {
   return Array.isArray(v) ? v : [v];
 }
 
-export async function scrapeRss(source: RssSourceConfig): Promise<NewsItem[]> {
-  const results: NewsItem[] = [];
+export async function scrapeRss(
+  source: RssSourceConfig,
+  options?: ScrapeOptions
+): Promise<ScrapeStats> {
+  const stats: ScrapeStats = { scraped: 0, posted: 0, postFailed: 0, skipped: 0 };
+
   try {
     const res = await fetch(source.url, {
       headers: {
@@ -19,14 +23,9 @@ export async function scrapeRss(source: RssSourceConfig): Promise<NewsItem[]> {
       },
     });
     if (!res.ok) {
-      return [
-        {
-          source: source.source,
-          type: source.type,
-          url: source.url,
-          error: `RSS fetch failed: ${res.status} ${res.statusText}`,
-        },
-      ];
+      console.error(`[${source.source}] RSS fetch failed: ${res.status} ${res.statusText}`);
+      stats.skipped += 1;
+      return stats;
     }
 
     const xml = await res.text();
@@ -37,50 +36,39 @@ export async function scrapeRss(source: RssSourceConfig): Promise<NewsItem[]> {
     });
     const doc = parser.parse(xml) as AnyObj;
 
-    // RSS2: doc.rss.channel.item[]
     const rssChannel = (doc.rss as AnyObj | undefined)?.channel as AnyObj | undefined;
     const rssItems = asArray((rssChannel?.item as AnyObj[] | AnyObj | undefined) as any);
-
-    // Atom: doc.feed.entry[]
     const atomEntries = asArray(((doc.feed as AnyObj | undefined)?.entry as any) as any);
-
     const items = rssItems.length ? rssItems : atomEntries;
+
     for (const it of items) {
       const obj = it as AnyObj;
-
-      const title = safeString(obj.title);
-      const link =
-        safeString(obj.link) ||
-        safeString((obj.link as AnyObj | undefined)?.["@_href"]) ||
-        safeString((obj.link as AnyObj | undefined)?.href);
-      const description = safeString(obj.description) || safeString(obj.summary);
-      const pubDate =
-        safeString(obj.pubDate) ||
-        safeString(obj.published) ||
-        safeString(obj.updated) ||
-        safeString((obj["dc:date"] as unknown) as string);
-
-      results.push({
+      const item: NewsItem = {
         source: source.source,
         type: source.type,
-        url: link ?? source.url,
-        title,
-        publishedAt: pubDate,
-        summary: description,
-      });
+        url:
+          safeString(obj.link) ||
+          safeString((obj.link as AnyObj | undefined)?.["@_href"]) ||
+          safeString((obj.link as AnyObj | undefined)?.href) ||
+          source.url,
+        title: safeString(obj.title),
+        publishedAt:
+          safeString(obj.pubDate) ||
+          safeString(obj.published) ||
+          safeString(obj.updated) ||
+          safeString((obj["dc:date"] as unknown) as string),
+        summary: safeString(obj.description) || safeString(obj.summary),
+      };
+
+      stats.scraped += 1;
+      if (options?.onItem) await options.onItem(item);
     }
 
-    return results;
+    return stats;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    return [
-      {
-        source: source.source,
-        type: source.type,
-        url: source.url,
-        error: `RSS parse error: ${message}`,
-      },
-    ];
+    console.error(`[${source.source}] RSS error: ${message}`);
+    stats.skipped += 1;
+    return stats;
   }
 }
-

@@ -37,6 +37,23 @@ Yes — you can deploy with `render.yaml` in the repo root. It defines a **cron 
 
 If the build succeeds but the run fails with missing `.so` libraries (e.g. `libglib`), switch to a **Docker** runtime with the official Playwright image instead of native Node.
 
+### Memory (512MB–2GB instances)
+
+The Eenadu scraper is tuned for low RAM:
+
+- Stops **load more** once enough links are collected (does not load the full list page)
+- Blocks images/CSS/fonts in the browser
+- Opens a **new page per article** and closes it after scrape
+- Recycles the browser context every 5 articles (override with `EENADU_CONTEXT_RECYCLE_EVERY`)
+
+Optional env vars:
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `EENADU_MAX_LOAD_MORE` | `12` | Max "load more" clicks on list page |
+| `EENADU_CONTEXT_RECYCLE_EVERY` | `5` | New browser context every N articles |
+| `maxItems` in `sources.ts` | — | Scrape only N articles (e.g. `20`) |
+
 ### Manual setup (without Blueprint)
 
 Same env and commands as in `render.yaml`:
@@ -57,10 +74,11 @@ OUTPUT_FILE=output/news.json npm run scrape
 
 ## Output
 
-- **Path (default):** `output/news.json` (override with `OUTPUT_FILE`)
-- **Shape:** Array of `NewsItem` objects:
-  - RSS: `{ source, type:'rss', url, title?, publishedAt?, summary?, error? }`
-  - Automate: `{ source, type:'automate', url, title?, publishedAt?, contentText?, error? }`
+Each article is **POSTed to the API immediately** after it is scraped (not saved in bulk at the end).
+
+- **API:** `POST $API_URL` with a one-item array per article
+- **Local file:** off by default. Set `WRITE_OUTPUT_FILE=1` to write a run summary to `OUTPUT_FILE` (counts only, not full articles)
+- **Scrape only:** `SKIP_API_POST=1 npm run scrape`
 
 ## Adding a new website
 

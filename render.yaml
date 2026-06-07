@@ -18,6 +18,10 @@ services:
         value: "0"
       - key: API_URL
         value: https://taajanews-api.onrender.com/api/source-articles
+      - key: EENADU_MAX_LOAD_MORE
+        value: "8"
+      - key: EENADU_CONTEXT_RECYCLE_EVERY
+        value: "5"
       # Optional: set in Dashboard if you want scrape-only (no POST)
       # - key: SKIP_API_POST
       #   value: "1"

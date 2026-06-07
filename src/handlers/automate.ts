@@ -1,19 +1,15 @@
-import type { AutomateSourceConfig, NewsItem } from "../framework/types.js";
+import type { AutomateSourceConfig, NewsItem, ScrapeOptions, ScrapeStats } from "../framework/types.js";
 import { scrapeEenaduAutomate } from "./eenaduAutomate.js";
 
-export async function scrapeAutomate(source: AutomateSourceConfig): Promise<NewsItem[]> {
+export async function scrapeAutomate(
+  source: AutomateSourceConfig,
+  options?: ScrapeOptions
+): Promise<ScrapeStats> {
   switch (source.source) {
     case "eenadu":
-      return await scrapeEenaduAutomate(source);
+      return await scrapeEenaduAutomate(source, options);
     default:
-      return [
-        {
-          source: source.source,
-          type: source.type,
-          url: source.url,
-          error: `No automate handler registered for source '${source.source}'`,
-        },
-      ];
+      console.error(`No automate handler for source '${source.source}'`);
+      return { scraped: 0, posted: 0, postFailed: 0, skipped: 1 };
   }
 }
-
