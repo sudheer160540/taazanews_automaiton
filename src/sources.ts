@@ -9,33 +9,33 @@ import type { SourceConfig } from "./framework/types.js";
  * - json: fetch CMS JSON list (?page=1,2,...), Playwright each article URL
  */
 export const SOURCES: SourceConfig[] = [
-  // {
-  //   source: "eenadu",
-  //   type: "automate",
-  //   url: "https://www.eenadu.net/latest-news-list",
-  //   maxItems: 20,
-  // },
-  // {
-  //   source: "sakshi",
-  //   type: "automate",
-  //   url: "https://www.sakshi.com/latest_stories",
-  //   maxItems: 20,
-  // },
+  {
+    source: "eenadu",
+    type: "automate",
+    url: "https://www.eenadu.net/latest-news-list",
+    maxItems: 20,
+  },
+  {
+    source: "sakshi",
+    type: "automate",
+    url: "https://www.sakshi.com/latest_stories",
+    maxItems: 20,
+  },
   {
     source: "ntv",
     type: "automate",
     url: "https://ntvtelugu.com/news/page/1",
     maxItems: 20,
   },
-  // {
-  //   source: "andhrajyothy",
-  //   type: "json",
-  //   url: "https://www.andhrajyothy.com/cms/articles/category/1",
-  //   pageSize: 10,
-  //   startPage: 1,
-  //   maxItems: 10,
-  //   domain: "https://www.andhrajyothy.com",
-  // },
+  {
+    source: "andhrajyothy",
+    type: "json",
+    url: "https://www.andhrajyothy.com/cms/articles/category/1",
+    pageSize: 10,
+    startPage: 1,
+    maxItems: 10,
+    domain: "https://www.andhrajyothy.com",
+  },
   // {
   //   source: "toi",
   //   type: "rss",
