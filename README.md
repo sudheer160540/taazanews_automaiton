@@ -89,3 +89,21 @@ Each article is **POSTed to the API immediately** after it is scraped (not saved
 ```
 
 2. If it’s `type: \"automate\"`, add a handler in `src/handlers/` and register it in `src/handlers/automate.ts`.
+
+Registered automate sources: **eenadu**, **sakshi**, **ntv**. JSON CMS sources: **andhrajyothy**.
+
+### JSON type (Andhrajyothy)
+
+```js
+{
+  source: "andhrajyothy",
+  type: "json",
+  url: "https://www.andhrajyothy.com/cms/articles/category/1",
+  pageSize: 10,   // items per ?page=N
+  startPage: 1,
+  maxItems: 20,   // fetches page 1 + page 2 when needed
+  domain: "https://www.andhrajyothy.com",
+}
+```
+
+Flow: `GET url?page=1` → 10 articles → Playwright each full URL → POST to API → repeat with `page=2` until `maxItems` reached.

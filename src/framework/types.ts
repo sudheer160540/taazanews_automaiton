@@ -1,7 +1,7 @@
-export type SourceType = "rss" | "automate";
+export type SourceType = "rss" | "automate" | "json";
 
 export interface SourceConfigBase {
-  source: string; // e.g. "eenadu", "toi"
+  source: string; // e.g. "eenadu", "toi", "andhrajyothy"
   type: SourceType;
   url: string;
 }
@@ -16,7 +16,19 @@ export interface AutomateSourceConfig extends SourceConfigBase {
   maxItems?: number;
 }
 
-export type SourceConfig = RssSourceConfig | AutomateSourceConfig;
+export interface JsonSourceConfig extends SourceConfigBase {
+  type: "json";
+  /** CMS JSON page size (default 10). API: ?page=1, ?page=2, ... */
+  pageSize?: number;
+  /** First page to fetch (default 1). */
+  startPage?: number;
+  /** Max articles to scrape across pages. */
+  maxItems?: number;
+  /** Site origin for relative article paths (default https://www.andhrajyothy.com). */
+  domain?: string;
+}
+
+export type SourceConfig = RssSourceConfig | AutomateSourceConfig | JsonSourceConfig;
 
 export interface NewsItem {
   source: string;

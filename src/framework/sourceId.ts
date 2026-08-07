@@ -23,6 +23,25 @@ export function extractSourceId(source: string, url: string): string | undefined
       if (cms) return cms[1];
       return undefined;
     }
+    case "sakshi": {
+      // .../slug-title-2866689
+      const m = url.match(/-(\d{5,})(?:\/)?$/);
+      if (m) return m[1];
+      return undefined;
+    }
+    case "andhrajyothy":
+    case "aj": {
+      // ...-1548033.html
+      const m = url.match(/-(\d{5,})\.html(?:\?.*)?$/i);
+      if (m) return m[1];
+      return undefined;
+    }
+    case "ntv": {
+      // ...-1001873.html
+      const m = url.match(/-(\d{5,})\.html(?:\?.*)?$/i);
+      if (m) return m[1];
+      return undefined;
+    }
     default:
       return undefined;
   }

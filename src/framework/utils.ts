@@ -39,3 +39,20 @@ export function safeString(x: unknown): string | undefined {
   return s.length ? s : undefined;
 }
 
+/** Full error text including Node fetch `cause` chain (e.g. ENOTFOUND, CERT, timeout). */
+export function formatError(err: unknown): string {
+  if (!(err instanceof Error)) return String(err);
+
+  const parts = [err.message];
+  let cause = err.cause;
+  let depth = 0;
+  while (cause instanceof Error && depth < 5) {
+    parts.push(`cause: ${cause.message}`);
+    if ("code" in cause && cause.code) parts.push(`code: ${String(cause.code)}`);
+    cause = cause.cause;
+    depth += 1;
+  }
+  if (err.stack) parts.push(err.stack.split("\n").slice(1, 3).join(" | "));
+  return parts.join(" | ");
+}
+

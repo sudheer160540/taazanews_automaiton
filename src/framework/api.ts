@@ -20,7 +20,8 @@ export interface PostResult {
 
 export function toApiPayload(item: NewsItem): SourceArticlePayload {
   const sourceId = extractSourceId(item.source, item.url);
-  const contentText = item.contentText ?? item.summary ?? undefined;
+  // Prefer full article body; only fall back to list excerpt when body is missing.
+  const contentText = item.contentText?.trim() || item.summary?.trim() || undefined;
 
   return {
     source: item.source,
@@ -69,9 +70,17 @@ export function createApiSink(
     const label = sourceId ?? item.url.slice(-40);
     const { ok, status, body } = await postSourceArticle(item, apiUrl);
 
+    const contentLen = item.contentText?.length ?? 0;
+    if (contentLen < 100) {
+      console.error(
+        `[api] warn ${item.source} ${label}: short/missing contentText (${contentLen} chars)`
+      );
+    }
     if (ok) {
       counters && (counters.posted += 1);
-      console.error(`[api] saved ${item.source} ${label} (${status})`);
+      console.error(
+        `[api] saved ${item.source} ${label} (${status}) contentText=${contentLen} chars`
+      );
     } else {
       counters && (counters.postFailed += 1);
       console.error(`[api] failed ${item.source} ${label} (${status}): ${body.slice(0, 200)}`);

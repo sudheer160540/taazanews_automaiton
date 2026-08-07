@@ -3,8 +3,10 @@ import { dirname } from "path";
 import { SOURCES } from "./sources.js";
 import type { NewsItem, ScrapeStats, SourceConfig } from "./framework/types.js";
 import { createApiSink } from "./framework/api.js";
+import { formatError } from "./framework/utils.js";
 import { scrapeRss } from "./handlers/rss.js";
 import { scrapeAutomate } from "./handlers/automate.js";
+import { scrapeJson } from "./handlers/json.js";
 
 const OUTPUT_FILE = process.env.OUTPUT_FILE ?? "output/news.json";
 const API_URL =
@@ -23,6 +25,8 @@ async function runOne(
       return await scrapeRss(source, { onItem });
     case "automate":
       return await scrapeAutomate(source, { onItem });
+    case "json":
+      return await scrapeJson(source, { onItem });
     default:
       console.error(`Unsupported source type: ${String((source as SourceConfig).type)}`);
       return { scraped: 0, posted: 0, postFailed: 0, skipped: 1 };
@@ -49,8 +53,7 @@ async function main(): Promise<void> {
         `[${src.source}] scraped ${stats.scraped}, posted ${posted}, api failed ${postFailed}`
       );
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error(`Failed ${src.source}: ${message}`);
+      console.error(`Failed ${src.source}: ${formatError(err)}`);
       totals.skipped += 1;
     }
   }
@@ -74,6 +77,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((err) => {
-  console.error(err);
+  console.error(formatError(err));
   process.exit(1);
 });
