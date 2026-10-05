@@ -13,19 +13,19 @@ export const SOURCES: SourceConfig[] = [
     source: "eenadu",
     type: "automate",
     url: "https://www.eenadu.net/latest-news-list",
-    maxItems: 5,
+    maxItems: 3,
   },
   {
     source: "sakshi",
     type: "automate",
     url: "https://www.sakshi.com/latest_stories",
-    maxItems: 5,
+    maxItems: 3,
   },
   {
     source: "ntv",
     type: "automate",
     url: "https://ntvtelugu.com/news/page/1",
-    maxItems: 5,
+    maxItems: 3,
   },
   {
     source: "andhrajyothy",
@@ -33,7 +33,7 @@ export const SOURCES: SourceConfig[] = [
     url: "https://www.andhrajyothy.com/cms/articles/category/1",
     pageSize: 10,
     startPage: 1,
-    maxItems: 5,
+    maxItems: 3,
     domain: "https://www.andhrajyothy.com",
   },
   // {
